@@ -145,12 +145,12 @@
         const name = row["Your Name"] ?? "Entry " + (i + 1);
         const timestamp = row["Timestamp"] ?? "";
         const picks = [
-          row["Tier 1 -- The Favorites (4/1 to 18/1)"] ?? "",
-          row["Tier 2 -- Contenders (20/1 to 40/1)"] ?? "",
-          row["Tier 3 -- Dark Horses (50/1 to 65/1)"] ?? "",
-          row["Tier 4 -- Long Shots (70/1 to 125/1)"] ?? "",
-          row["Tier 5 -- Big Underdogs (150/1 to 300/1)"] ?? "",
-          row["Tier 6 -- The Field (500/1 and longer)"] ?? "",
+          row["Tier 1 -- The Favorites"] ?? "",
+          row["Tier 2 -- The Contenders"] ?? "",
+          row["Tier 3 -- The Dark Horses"] ?? "",
+          row["Tier 4 -- The Long Shots"] ?? "",
+          row["Tier 5 -- The Underdogs"] ?? "",
+          row["Tier 6 -- The Field"] ?? "",
         ].map(normalizeName);
 
         return { name, paid, picks, timestamp };
