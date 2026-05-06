@@ -11,7 +11,7 @@ body {
   min-height: 100vh;
 }
 
-/* ── Header ── */
+/* Header */
 .header {
   background-color: #1a3a5c;
   border-bottom: 4px solid #c9a84c;
@@ -40,7 +40,7 @@ body {
   margin-top: 6px;
 }
 
-/* ── Par row ── */
+/* Par row */
 .par-row {
   background-color: #0f2a45;
   display: flex;
@@ -65,7 +65,7 @@ body {
   min-width: 48px;
 }
 
-/* ── Leaderboard table ── */
+/* Leaderboard table */
 .leaderboard-wrap {
   max-width: 1100px;
   margin: 24px auto;
@@ -132,4 +132,101 @@ tbody td.pos {
 }
 
 tbody td.total {
-  text-align: cen
+  text-align: center;
+  font-weight: bold;
+  font-size: 1rem;
+  width: 60px;
+}
+
+tbody td.total.under { color: #ff4444; }
+tbody td.total.even  { color: #ffffff; }
+tbody td.total.over  { color: #aaaaaa; }
+tbody td.total.dash  { color: #666666; }
+
+.entry-name {
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.golfer-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.golfer-chip {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background-color: #2a2a2a;
+  color: #cccccc;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.golfer-chip.counting {
+  background-color: #1a3a5c;
+  color: #ffffff;
+  border: 1px solid #c9a84c;
+}
+
+.golfer-chip.cut {
+  background-color: #2a1a1a;
+  color: #666666;
+  text-decoration: line-through;
+}
+
+.golfer-chip.not-started {
+  color: #666666;
+}
+
+/* Score colors inside chips */
+.chip-score {
+  font-weight: bold;
+}
+
+.chip-score.under { color: #ff4444; }
+.chip-score.even  { color: #ffffff; }
+.chip-score.over  { color: #aaaaaa; }
+.chip-score.dash  { color: #555555; }
+
+/* Status bar */
+.status-bar {
+  text-align: center;
+  font-size: 0.72rem;
+  color: #666666;
+  padding: 8px;
+  margin-top: 8px;
+}
+
+.status-bar span.live {
+  color: #c9a84c;
+  font-weight: bold;
+  margin-right: 6px;
+}
+
+/* Loading / error states */
+.state-msg {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666666;
+  font-size: 0.875rem;
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .header-title { font-size: 1.3rem; }
+  .par-row { display: none; }
+
+  table { font-size: 0.8rem; }
+
+  thead th.hide-mobile { display: none; }
+  tbody td.hide-mobile { display: none; }
+
+  .golfer-chip { font-size: 0.68rem; }
+
+  .leaderboard-wrap { padding: 0 8px; }
+}
