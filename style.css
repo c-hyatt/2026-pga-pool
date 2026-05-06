@@ -1,0 +1,135 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #1a1a1a;
+  font-family: Arial, sans-serif;
+  color: #ffffff;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.header {
+  background-color: #1a3a5c;
+  border-bottom: 4px solid #c9a84c;
+  padding: 12px 20px;
+  text-align: center;
+}
+
+.header-title {
+  font-size: 2rem;
+  font-weight: bold;
+  letter-spacing: 0.15em;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.header-subtitle {
+  font-size: 0.85rem;
+  color: #c9a84c;
+  margin-top: 4px;
+  letter-spacing: 0.1em;
+}
+
+.header-meta {
+  font-size: 0.75rem;
+  color: #aaaaaa;
+  margin-top: 6px;
+}
+
+/* ── Par row ── */
+.par-row {
+  background-color: #0f2a45;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 20px;
+  font-size: 0.7rem;
+  color: #c9a84c;
+  letter-spacing: 0.08em;
+  overflow-x: auto;
+  gap: 2px;
+}
+
+.par-cell {
+  min-width: 28px;
+  text-align: center;
+  padding: 2px 4px;
+}
+
+.par-cell.hole-label {
+  color: #aaaaaa;
+  min-width: 48px;
+}
+
+/* ── Leaderboard table ── */
+.leaderboard-wrap {
+  max-width: 1100px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+
+.leaderboard-title {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  color: #c9a84c;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  padding-left: 4px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+thead tr {
+  background-color: #0f2a45;
+  color: #c9a84c;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+thead th {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 2px solid #c9a84c;
+  white-space: nowrap;
+}
+
+thead th.num {
+  text-align: center;
+}
+
+tbody tr {
+  border-bottom: 1px solid #2a2a2a;
+  transition: background 0.15s;
+}
+
+tbody tr:hover {
+  background-color: #222222;
+}
+
+tbody tr.unpaid {
+  opacity: 0.35;
+}
+
+tbody td {
+  padding: 10px 10px;
+  vertical-align: top;
+}
+
+tbody td.pos {
+  text-align: center;
+  font-weight: bold;
+  color: #c9a84c;
+  width: 40px;
+}
+
+tbody td.total {
+  text-align: cen
