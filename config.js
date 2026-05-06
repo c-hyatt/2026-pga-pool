@@ -4,7 +4,7 @@ const CONFIG = {
   pollIntervalMinutes: 5,
 
   // Paste your Google Sheet published CSV URL here once you have it
-  sheetCsvUrl: "",
+  sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSvwE8J6LLFBiFN5LwSyhgRDF5NJmhRN9dRMsy5tJ0PeQGAhIDZmvhJAT9vPeO3QMdBXtaDIxM0pKf9/pub?gid=106930365&single=true&output=csv",
 
   // Name normalization -- maps form submission names to ESPN API names
   // Add any mismatches you find during testing here
