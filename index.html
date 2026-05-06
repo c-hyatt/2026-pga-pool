@@ -38,7 +38,7 @@
   </div>
 
   <script>
-  // ── Utilities ──────────────────────────────────────────────────────────────
+  // -- Utilities --------------------------------------------------------------
 
   function normalizeName(name) {
     for (const [form, api] of Object.entries(CONFIG.nameMap)) {
@@ -72,7 +72,7 @@
     });
   }
 
-  // ── ESPN fetch ─────────────────────────────────────────────────────────────
+  // -- ESPN fetch -------------------------------------------------------------
 
   let cachedGolfers = null;
 
@@ -85,7 +85,6 @@
       const competitors = data?.events?.[0]?.competitions?.[0]?.competitors ?? [];
       if (!competitors.length) return cachedGolfers;
 
-      // Worst score among active (non-cut, non-WD) players
       let worstScore = -999;
       competitors.forEach(c => {
         const active = !c.status?.type?.description?.toLowerCase().includes("cut") &&
@@ -108,7 +107,6 @@
           totalToPar = scoreStr === "E" ? 0 : parseInt(scoreStr);
         }
 
-        // Cut or WD penalty
         if (!madeCut || withdrawn) {
           totalToPar = worstScore + 1;
         }
@@ -130,7 +128,7 @@
     }
   }
 
-  // ── Google Sheet fetch ─────────────────────────────────────────────────────
+  // -- Google Sheet fetch -----------------------------------------------------
 
   async function fetchEntries() {
     if (!CONFIG.sheetCsvUrl) return [];
@@ -140,7 +138,6 @@
       const rows = parseCSV(text);
 
       return rows.map((row, i) => {
-        // Column names must match your Sheet headers exactly
         const paid = (row["Paid"] ?? "").toUpperCase() === "TRUE";
         const name = row["Your Name"] ?? "Entry " + (i + 1);
         const timestamp = row["Timestamp"] ?? "";
@@ -161,7 +158,7 @@
     }
   }
 
-  // ── Scoring engine ─────────────────────────────────────────────────────────
+  // -- Scoring engine ---------------------------------------------------------
 
   function scoreEntry(picks, golferMap) {
     const scores = picks.map(p => {
@@ -170,12 +167,10 @@
       return { ...g, notStarted: g.totalToPar === null };
     });
 
-    // Sort by totalToPar ascending, nulls last
     const active = scores.filter(s => s.totalToPar !== null);
     const notStarted = scores.filter(s => s.totalToPar === null);
     active.sort((a, b) => a.totalToPar - b.totalToPar);
 
-    // Best 4 cumulative
     const counting = active.slice(0, 4);
     const countingNames = new Set(counting.map(s => s.name));
     const total = counting.reduce((sum, s) => sum + s.totalToPar, 0);
@@ -188,7 +183,7 @@
     };
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // -- Render -----------------------------------------------------------------
 
   function renderLeaderboard(entries, golferMap) {
     const container = document.getElementById("leaderboard-container");
@@ -198,13 +193,13 @@
       return;
     }
 
-    // Score all entries
     const scored = entries.map(e => {
-      const result = golferMap ? scoreEntry(e.picks, golferMap) : { total: null, scores: [], countingNames: new Set() };
+      const result = golferMap
+        ? scoreEntry(e.picks, golferMap)
+        : { total: null, scores: e.picks.map(p => ({ name: p, totalToPar: null, notStarted: true, madeCut: true, withdrawn: false })), countingNames: new Set() };
       return { ...e, ...result };
     });
 
-    // Sort: scored first (ascending), then all-dash, tiebreak by timestamp
     scored.sort((a, b) => {
       const aNull = a.total === null, bNull = b.total === null;
       if (aNull && bNull) return a.timestamp < b.timestamp ? -1 : 1;
@@ -214,7 +209,6 @@
       return a.timestamp < b.timestamp ? -1 : 1;
     });
 
-    // Build table
     let html = `
       <table>
         <thead>
@@ -232,68 +226,13 @@
       const scoreObj = formatScore(e.total);
       const rowClass = e.paid ? "" : "unpaid";
 
-      // Position -- tie handling
       if (idx > 0 && scored[idx - 1].total === e.total && e.total !== null) {
-        // tie -- no increment
+        // tied -- hold position
       } else {
         pos = idx + 1;
       }
       const posDisplay = e.total === null ? "--" : pos;
 
-      // Golfer chips
       const chips = e.scores.map(s => {
         const isCounting = e.countingNames.has(s.name);
-        const sc = formatScore(s.totalToPar);
-        let chipClass = "golfer-chip";
-        if (!s.madeCut || s.withdrawn) chipClass += " cut";
-        else if (s.notStarted) chipClass += " not-started";
-        else if (isCounting) chipClass += " counting";
-
-        const scoreTag = s.notStarted
-          ? `<span class="chip-score dash">--</span>`
-          : `<span class="chip-score ${sc.cls}">${sc.display}</span>`;
-
-        return `<span class="${chipClass}">${s.name}${scoreTag}</span>`;
-      }).join("");
-
-      html += `
-        <tr class="${rowClass}">
-          <td class="pos">${posDisplay}</td>
-          <td>
-            <div class="entry-name">${e.name}</div>
-            <div class="golfer-list">${chips}</div>
-          </td>
-          <td class="total ${scoreObj.cls}">${e.total === null ? "--" : scoreObj.display}</td>
-        </tr>
-      `;
-    });
-
-    html += `</tbody></table>`;
-    container.innerHTML = html;
-  }
-
-  // ── Poll loop ──────────────────────────────────────────────────────────────
-
-  async function refresh() {
-    const [golferMap, entries] = await Promise.all([fetchESPN(), fetchEntries()]);
-    const paid = entries.filter(e => e.paid);
-    renderLeaderboard(paid, golferMap);
-
-    const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    const bar = document.getElementById("status-bar");
-    bar.innerHTML = `<span class="live">LIVE</span> Last updated: ${now} &nbsp;|&nbsp; Refreshes every ${CONFIG.pollIntervalMinutes} min`;
-  }
-
-  // Only poll when tab is visible
-  async function start() {
-    await refresh();
-    setInterval(() => {
-      if (!document.hidden) refresh();
-    }, CONFIG.pollIntervalMinutes * 60 * 1000);
-  }
-
-  start();
-  </script>
-
-</body>
-</html>
+        const sc = formatScore(s.total
