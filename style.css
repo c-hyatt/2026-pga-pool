@@ -58,6 +58,7 @@ body {
   min-width: 28px;
   text-align: center;
   padding: 2px 4px;
+  line-height: 1.6;
 }
 
 .par-cell.hole-label {
