@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2026 PGA Championship Pool</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="config.js"></script>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-title">PGA Championship</div>
+    <div class="header-subtitle">Aronimink Golf Club -- Newtown Square, Pennsylvania</div>
+    <div class="header-meta">May 14--17, 2026 &nbsp;|&nbsp; Pool Leaderboard</div>
+  </div>
+
+  <!-- Decorative par row -->
+  <div class="par-row">
+    <div class="par-cell hole-label">HOLE</div>
+    <div class="par-cell">1</div><div class="par-cell">2</div><div class="par-cell">3</div>
+    <div class="par-cell">4</div><div class="par-cell">5</div><div class="par-cell">6</div>
+    <div class="par-cell">7</div><div class="par-cell">8</div><div class="par-cell">9</div>
+    <div class="par-cell">10</div><div class="par-cell">11</div><div class="par-cell">12</div>
+    <div class="par-cell">13</div><div class="par-cell">14</div><div class="par-cell">15</div>
+    <div class="par-cell">16</div><div class="par-cell">17</div><div class="par-cell">18</div>
+    <div class="par-cell hole-label">TOTAL</div>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="leaderboard-wrap">
+    <div class="leaderboard-title">Leaderboard</div>
+    <div id="leaderboard-container">
+      <div class="state-msg" id="status-msg">Loading scores...</div>
+    </div>
+    <div class="status-bar" id="status-bar"></div>
+  </div>
+
+  <script>
+  // ── Utilities ──────────────────────────────────────────────────────────────
+
+  function normalizeName(name) {
+    for (const [form, api] of Object.entries(CONFIG.nameMap)) {
+      if (name === form) return api;
+    }
+    return name;
+  }
+
+  function formatScore(val) {
+    if (val === null || val === undefined) return { display: "--", cls: "dash" };
+    if (val === 0)  return { display: "E",  cls: "even" };
+    if (val < 0)   return { display: String(val), cls: "under" };
+    return { display: "+" + val, cls: "over" };
+  }
+
+  function parseCSV(text) {
+    const lines = text.trim().split("\n");
+    const headers = lines[0].split(",").map(h => h.replace(/^"|"$/g, "").trim());
+    return lines.slice(1).map(line => {
+      const cols = [];
+      let cur = "", inQ = false;
+      for (const ch of line) {
+        if (ch === '"') { inQ = !inQ; continue; }
+        if (ch === "," && !inQ) { cols.push(cur.trim()); cur = ""; continue; }
+        cur += ch;
+      }
+      cols.push(cur.trim());
+      const row = {};
+      headers.forEach((h, i) => row[h] = cols[i] ?? "");
+      return row;
+    });
+  }
+
+  // ── ESPN fetch ─────────────────────────────────────────────────────────────
+
+  let cachedGolfers = null;
+
+  async function fetchESPN() {
+    try {
+      const url = `${CONFIG.espnEndpoint}?event=${CONFIG.espnEventId}`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      const competitors = data?.events?.[0]?.competitions?.[0]?.competitors ?? [];
+      if (!competitors.length) return cachedGolfers;
+
+      // Worst score among active (non-cut, non-WD) players
+      let worstScore = -999;
+      competitors.forEach(c => {
+        const active = !c.status?.type?.description?.toLowerCase().includes("cut") &&
+                       !c.status?.type?.description?.toLowerCase().includes("withdrawn");
+        const score = c.statistics?.find(s => s.name === "scoreToPar")?.displayValue;
+        const val = score === "E" ? 0 : parseInt(score);
+        if (active && !isNaN(val) && val > worstScore) worstScore = val;
+      });
+
+      const golferMap = {};
+      competitors.forEach(c => {
+        const name = c.athlete?.displayName ?? "";
+        const statusDesc = c.status?.type?.description?.toLowerCase() ?? "";
+        const madeCut = !statusDesc.includes("cut");
+        const withdrawn = statusDesc.includes("withdrawn");
+
+        let totalToPar = null;
+        const scoreStr = c.statistics?.find(s => s.name === "scoreToPar")?.displayValue;
+        if (scoreStr !== undefined && scoreStr !== null) {
+          totalToPar = scoreStr === "E" ? 0 : parseInt(scoreStr);
+        }
+
+        // Cut or WD penalty
+        if (!madeCut || withdrawn) {
+          totalToPar = worstScore + 1;
+        }
+
+        const rounds = (c.linescores ?? []).map(r => {
+          const v = r.displayValue;
+          return v === "E" ? 0 : (isNaN(parseInt(v)) ? null : parseInt(v));
+        });
+
+        golferMap[name] = { name, totalToPar, rounds, madeCut, withdrawn };
+      });
+
+      cachedGolfers = golferMap;
+      return golferMap;
+
+    } catch (e) {
+      console.warn("ESPN fetch failed:", e);
+      return cachedGolfers;
+    }
+  }
+
+  // ── Google Sheet fetch ─────────────────────────────────────────────────────
+
+  async function fetchEntries() {
+    if (!CONFIG.sheetCsvUrl) return [];
+    try {
+      const res = await fetch(CONFIG.sheetCsvUrl);
+      const text = await res.text();
+      const rows = parseCSV(text);
+
+      return rows.map((row, i) => {
+        // Column names must match your Sheet headers exactly
+        const paid = (row["Paid"] ?? "").toUpperCase() === "TRUE";
+        const name = row["Your Name"] ?? "Entry " + (i + 1);
+        const timestamp = row["Timestamp"] ?? "";
+        const picks = [
+          row["Tier 1 -- The Favorites (4/1 to 18/1)"] ?? "",
+          row["Tier 2 -- Contenders (20/1 to 40/1)"] ?? "",
+          row["Tier 3 -- Dark Horses (50/1 to 65/1)"] ?? "",
+          row["Tier 4 -- Long Shots (70/1 to 125/1)"] ?? "",
+          row["Tier 5 -- Big Underdogs (150/1 to 300/1)"] ?? "",
+          row["Tier 6 -- The Field (500/1 and longer)"] ?? "",
+        ].map(normalizeName);
+
+        return { name, paid, picks, timestamp };
+      });
+    } catch (e) {
+      console.warn("Sheet fetch failed:", e);
+      return [];
+    }
+  }
+
+  // ── Scoring engine ─────────────────────────────────────────────────────────
+
+  function scoreEntry(picks, golferMap) {
+    const scores = picks.map(p => {
+      const g = golferMap[p];
+      if (!g) return { name: p, totalToPar: null, notStarted: true, madeCut: true, withdrawn: false };
+      return { ...g, notStarted: g.totalToPar === null };
+    });
+
+    // Sort by totalToPar ascending, nulls last
+    const active = scores.filter(s => s.totalToPar !== null);
+    const notStarted = scores.filter(s => s.totalToPar === null);
+    active.sort((a, b) => a.totalToPar - b.totalToPar);
+
+    // Best 4 cumulative
+    const counting = active.slice(0, 4);
+    const countingNames = new Set(counting.map(s => s.name));
+    const total = counting.reduce((sum, s) => sum + s.totalToPar, 0);
+    const hasScore = counting.length > 0;
+
+    return {
+      total: hasScore ? total : null,
+      scores: [...active, ...notStarted],
+      countingNames,
+    };
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  function renderLeaderboard(entries, golferMap) {
+    const container = document.getElementById("leaderboard-container");
+
+    if (!entries.length) {
+      container.innerHTML = '<div class="state-msg">No paid entries yet.</div>';
+      return;
+    }
+
+    // Score all entries
+    const scored = entries.map(e => {
+      const result = golferMap ? scoreEntry(e.picks, golferMap) : { total: null, scores: [], countingNames: new Set() };
+      return { ...e, ...result };
+    });
+
+    // Sort: scored first (ascending), then all-dash, tiebreak by timestamp
+    scored.sort((a, b) => {
+      const aNull = a.total === null, bNull = b.total === null;
+      if (aNull && bNull) return a.timestamp < b.timestamp ? -1 : 1;
+      if (aNull) return 1;
+      if (bNull) return -1;
+      if (a.total !== b.total) return a.total - b.total;
+      return a.timestamp < b.timestamp ? -1 : 1;
+    });
+
+    // Build table
+    let html = `
+      <table>
+        <thead>
+          <tr>
+            <th class="num">POS</th>
+            <th>PLAYER</th>
+            <th class="num">SCORE</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    let pos = 1;
+    scored.forEach((e, idx) => {
+      const scoreObj = formatScore(e.total);
+      const rowClass = e.paid ? "" : "unpaid";
+
+      // Position -- tie handling
+      if (idx > 0 && scored[idx - 1].total === e.total && e.total !== null) {
+        // tie -- no increment
+      } else {
+        pos = idx + 1;
+      }
+      const posDisplay = e.total === null ? "--" : pos;
+
+      // Golfer chips
+      const chips = e.scores.map(s => {
+        const isCounting = e.countingNames.has(s.name);
+        const sc = formatScore(s.totalToPar);
+        let chipClass = "golfer-chip";
+        if (!s.madeCut || s.withdrawn) chipClass += " cut";
+        else if (s.notStarted) chipClass += " not-started";
+        else if (isCounting) chipClass += " counting";
+
+        const scoreTag = s.notStarted
+          ? `<span class="chip-score dash">--</span>`
+          : `<span class="chip-score ${sc.cls}">${sc.display}</span>`;
+
+        return `<span class="${chipClass}">${s.name}${scoreTag}</span>`;
+      }).join("");
+
+      html += `
+        <tr class="${rowClass}">
+          <td class="pos">${posDisplay}</td>
+          <td>
+            <div class="entry-name">${e.name}</div>
+            <div class="golfer-list">${chips}</div>
+          </td>
+          <td class="total ${scoreObj.cls}">${e.total === null ? "--" : scoreObj.display}</td>
+        </tr>
+      `;
+    });
+
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+  }
+
+  // ── Poll loop ──────────────────────────────────────────────────────────────
+
+  async function refresh() {
+    const [golferMap, entries] = await Promise.all([fetchESPN(), fetchEntries()]);
+    const paid = entries.filter(e => e.paid);
+    renderLeaderboard(paid, golferMap);
+
+    const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const bar = document.getElementById("status-bar");
+    bar.innerHTML = `<span class="live">LIVE</span> Last updated: ${now} &nbsp;|&nbsp; Refreshes every ${CONFIG.pollIntervalMinutes} min`;
+  }
+
+  // Only poll when tab is visible
+  async function start() {
+    await refresh();
+    setInterval(() => {
+      if (!document.hidden) refresh();
+    }, CONFIG.pollIntervalMinutes * 60 * 1000);
+  }
+
+  start();
+  </script>
+
+</body>
+</html>
