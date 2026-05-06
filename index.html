@@ -16,6 +16,18 @@
     <div class="header-meta">May 14--17, 2026 &nbsp;|&nbsp; Pool Leaderboard</div>
   </div>
 
+  <!-- Decorative par row -->
+  <div class="par-row">
+    <div class="par-cell hole-label">HOLE</div>
+    <div class="par-cell">1</div><div class="par-cell">2</div><div class="par-cell">3</div>
+    <div class="par-cell">4</div><div class="par-cell">5</div><div class="par-cell">6</div>
+    <div class="par-cell">7</div><div class="par-cell">8</div><div class="par-cell">9</div>
+    <div class="par-cell">10</div><div class="par-cell">11</div><div class="par-cell">12</div>
+    <div class="par-cell">13</div><div class="par-cell">14</div><div class="par-cell">15</div>
+    <div class="par-cell">16</div><div class="par-cell">17</div><div class="par-cell">18</div>
+    <div class="par-cell hole-label">TOTAL</div>
+  </div>
+
   <!-- Leaderboard -->
   <div class="leaderboard-wrap">
     <div class="leaderboard-title">Leaderboard</div>
@@ -223,4 +235,56 @@
 
       const chips = e.scores.map(s => {
         const isCounting = e.countingNames.has(s.name);
-        const sc = formatScore(s.total
+        const sc = formatScore(s.totalToPar);
+        let chipClass = "golfer-chip";
+        if (!s.madeCut || s.withdrawn) chipClass += " cut";
+        else if (s.notStarted) chipClass += " not-started";
+        else if (isCounting) chipClass += " counting";
+
+        const scoreTag = s.notStarted
+          ? `<span class="chip-score dash">--</span>`
+          : `<span class="chip-score ${sc.cls}">${sc.display}</span>`;
+
+        return `<span class="${chipClass}">${s.name}${scoreTag}</span>`;
+      }).join("");
+
+      html += `
+        <tr class="${rowClass}">
+          <td class="pos">${posDisplay}</td>
+          <td>
+            <div class="entry-name">${e.name}</div>
+            <div class="golfer-list">${chips}</div>
+          </td>
+          <td class="total ${scoreObj.cls}">${e.total === null ? "--" : scoreObj.display}</td>
+        </tr>
+      `;
+    });
+
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+  }
+
+  // -- Poll loop --------------------------------------------------------------
+
+  async function refresh() {
+    const [golferMap, entries] = await Promise.all([fetchESPN(), fetchEntries()]);
+    const paid = entries.filter(e => e.paid);
+    renderLeaderboard(paid, golferMap);
+
+    const now = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const bar = document.getElementById("status-bar");
+    bar.innerHTML = `<span class="live">LIVE</span> Last updated: ${now} &nbsp;|&nbsp; Refreshes every ${CONFIG.pollIntervalMinutes} min`;
+  }
+
+  async function start() {
+    await refresh();
+    setInterval(() => {
+      if (!document.hidden) refresh();
+    }, CONFIG.pollIntervalMinutes * 60 * 1000);
+  }
+
+  start();
+  </script>
+
+</body>
+</html>
