@@ -233,7 +233,7 @@ tbody td.total.dash  { color: #666666; }
   thead th.hide-mobile { display: none; }
   tbody td.hide-mobile { display: none; }
 
-  .golfer-chip { font-size: 0.68rem; }
+  .golfer-chip { font-size: 0.75rem; }
 
   .leaderboard-wrap { padding: 0 8px; }
 }
