@@ -101,8 +101,13 @@
 competitors.forEach(c => {
   const active = !c.status?.type?.description?.toLowerCase().includes("cut") &&
                  !c.status?.type?.description?.toLowerCase().includes("withdrawn");
-  const score = c.score;
-  const val = score === "E" ? 0 : parseInt(score);
+  const completedR = (c.linescores ?? []).filter(r =>
+  r.displayValue && r.displayValue !== "-" && r.displayValue !== "--"
+);
+const val = completedR.reduce((sum, r) => {
+  const v = r.displayValue === "E" ? 0 : parseInt(r.displayValue);
+  return sum + (isNaN(v) ? 0 : v);
+}, 0);
   if (active && !isNaN(val) && val > worstScore) worstScore = val;
 });
 
@@ -114,10 +119,15 @@ competitors.forEach(c => {
   const withdrawn = statusDesc.includes("withdrawn");
 
   let totalToPar = null;
-  const scoreStr = c.score;
-  if (scoreStr !== undefined && scoreStr !== null && scoreStr !== "-") {
-    totalToPar = scoreStr === "E" ? 0 : parseInt(scoreStr);
-  }
+const completedRounds = (c.linescores ?? []).filter(r => 
+  r.displayValue && r.displayValue !== "-" && r.displayValue !== "--"
+);
+if (completedRounds.length > 0) {
+  totalToPar = completedRounds.reduce((sum, r) => {
+    const val = r.displayValue === "E" ? 0 : parseInt(r.displayValue);
+    return sum + (isNaN(val) ? 0 : val);
+  }, 0);
+}
 
         if (!madeCut || withdrawn) {
           totalToPar = worstScore + 1;
