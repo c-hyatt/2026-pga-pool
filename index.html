@@ -153,6 +153,7 @@ competitors.forEach(c => {
         const paid = (row["Paid"] ?? "").toUpperCase() === "TRUE";
         const name = row["Your Name"] ?? "Entry " + (i + 1);
         const timestamp = row["Timestamp"] ?? "";
+        const tiebreaker = parseInt(row["Tiebreaker: Winning Score"] ?? "0") || 0;
         const picks = [
           row["Tier 1 -- The Favorites"] ?? "",
           row["Tier 2 -- The Contenders"] ?? "",
@@ -162,7 +163,7 @@ competitors.forEach(c => {
           row["Tier 6 -- The Field"] ?? "",
         ].map(normalizeName);
 
-        return { name, paid, picks, timestamp };
+        return { name, paid, picks, timestamp, tiebreaker };
       });
     } catch (e) {
       console.warn("Sheet fetch failed:", e);
@@ -218,6 +219,12 @@ competitors.forEach(c => {
       if (aNull) return 1;
       if (bNull) return -1;
       if (a.total !== b.total) return a.total - b.total;
+      // Tiebreaker: closest to actual winning score (set in CONFIG)
+      if (CONFIG.actualWinningScore) {
+        const aDiff = Math.abs(a.tiebreaker - CONFIG.actualWinningScore);
+        const bDiff = Math.abs(b.tiebreaker - CONFIG.actualWinningScore);
+        if (aDiff !== bDiff) return aDiff - bDiff;
+      }
       return a.timestamp < b.timestamp ? -1 : 1;
     });
 
