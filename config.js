@@ -16,6 +16,7 @@ const CONFIG = {
     "Sami Valimaki": "Sami Välimäki",
   },
 
+  actualWinningScore: null,
   tiers: [
     { label: "Tier 1 -- The Favorites",     range: "4/1 to 18/1" },
     { label: "Tier 2 -- Contenders",         range: "20/1 to 40/1" },
