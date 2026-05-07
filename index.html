@@ -98,26 +98,26 @@
       if (!competitors.length) return cachedGolfers;
 
       let worstScore = -999;
-      competitors.forEach(c => {
-        const active = !c.status?.type?.description?.toLowerCase().includes("cut") &&
-                       !c.status?.type?.description?.toLowerCase().includes("withdrawn");
-        const score = c.statistics?.find(s => s.name === "scoreToPar")?.displayValue;
-        const val = score === "E" ? 0 : parseInt(score);
-        if (active && !isNaN(val) && val > worstScore) worstScore = val;
-      });
+competitors.forEach(c => {
+  const active = !c.status?.type?.description?.toLowerCase().includes("cut") &&
+                 !c.status?.type?.description?.toLowerCase().includes("withdrawn");
+  const score = c.score;
+  const val = score === "E" ? 0 : parseInt(score);
+  if (active && !isNaN(val) && val > worstScore) worstScore = val;
+});
 
-      const golferMap = {};
-      competitors.forEach(c => {
-        const name = c.athlete?.displayName ?? "";
-        const statusDesc = c.status?.type?.description?.toLowerCase() ?? "";
-        const madeCut = !statusDesc.includes("cut");
-        const withdrawn = statusDesc.includes("withdrawn");
+const golferMap = {};
+competitors.forEach(c => {
+  const name = c.athlete?.displayName ?? "";
+  const statusDesc = c.status?.type?.description?.toLowerCase() ?? "";
+  const madeCut = !statusDesc.includes("cut");
+  const withdrawn = statusDesc.includes("withdrawn");
 
-        let totalToPar = null;
-        const scoreStr = c.statistics?.find(s => s.name === "scoreToPar")?.displayValue;
-        if (scoreStr !== undefined && scoreStr !== null) {
-          totalToPar = scoreStr === "E" ? 0 : parseInt(scoreStr);
-        }
+  let totalToPar = null;
+  const scoreStr = c.score;
+  if (scoreStr !== undefined && scoreStr !== null && scoreStr !== "-") {
+    totalToPar = scoreStr === "E" ? 0 : parseInt(scoreStr);
+  }
 
         if (!madeCut || withdrawn) {
           totalToPar = worstScore + 1;
