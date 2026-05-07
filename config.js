@@ -13,6 +13,7 @@ const CONFIG = {
     "Rasmus Hojgaard": "Rasmus Højgaard",
     "Nicolai Hojgaard": "Nicolai Højgaard",
     "Padraig Harrington": "Pádraig Harrington",
+    "Sami Valimaki": "Sami Välimäki",
   },
 
   tiers: [
