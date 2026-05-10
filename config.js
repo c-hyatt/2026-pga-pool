@@ -1,5 +1,5 @@
 const CONFIG = {
-  espnEventId: "401811945",
+  espnEventId: "401811947",
   espnEndpoint: "https://site.api.espn.com/apis/site/v2/sports/golf/pga/scoreboard",
   pollIntervalMinutes: 5,
 
