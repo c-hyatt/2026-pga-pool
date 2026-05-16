@@ -97,40 +97,24 @@
       const competitors = data?.events?.[0]?.competitions?.[0]?.competitors ?? [];
       if (!competitors.length) return cachedGolfers;
 
-      let worstScore = -999;
-competitors.forEach(c => {
-  const active = !c.status?.type?.description?.toLowerCase().includes("cut") &&
-                 !c.status?.type?.description?.toLowerCase().includes("withdrawn");
-  const completedR = (c.linescores ?? []).filter(r =>
-  r.displayValue && r.displayValue !== "-" && r.displayValue !== "--"
-);
-const val = completedR.reduce((sum, r) => {
-  const v = r.displayValue === "E" ? 0 : parseInt(r.displayValue);
-  return sum + (isNaN(v) ? 0 : v);
-}, 0);
-  if (active && !isNaN(val) && val > worstScore) worstScore = val;
-});
+      // STEP 1: Build the golfer map with real scores first
+      const golferMap = {};
+      competitors.forEach(c => {
+        const name = c.athlete?.displayName ?? "";
+        const statusDesc = c.status?.type?.description?.toLowerCase() ?? "";
+        const madeCut = !statusDesc.includes("cut");
+        const withdrawn = statusDesc.includes("withdrawn");
 
-const golferMap = {};
-competitors.forEach(c => {
-  const name = c.athlete?.displayName ?? "";
-  const statusDesc = c.status?.type?.description?.toLowerCase() ?? "";
-  const madeCut = !statusDesc.includes("cut");
-  const withdrawn = statusDesc.includes("withdrawn");
+        const completedRounds = (c.linescores ?? []).filter(r =>
+          r.displayValue && r.displayValue !== "-" && r.displayValue !== "--"
+        );
 
-  let totalToPar = null;
-const completedRounds = (c.linescores ?? []).filter(r => 
-  r.displayValue && r.displayValue !== "-" && r.displayValue !== "--"
-);
-if (completedRounds.length > 0) {
-  totalToPar = completedRounds.reduce((sum, r) => {
-    const val = r.displayValue === "E" ? 0 : parseInt(r.displayValue);
-    return sum + (isNaN(val) ? 0 : val);
-  }, 0);
-}
-
-        if (!madeCut || withdrawn) {
-          totalToPar = worstScore + 1;
+        let totalToPar = null;
+        if (completedRounds.length > 0) {
+          totalToPar = completedRounds.reduce((sum, r) => {
+            const val = r.displayValue === "E" ? 0 : parseInt(r.displayValue);
+            return sum + (isNaN(val) ? 0 : val);
+          }, 0);
         }
 
         const rounds = (c.linescores ?? []).map(r => {
@@ -139,6 +123,21 @@ if (completedRounds.length > 0) {
         });
 
         golferMap[name] = { name, totalToPar, rounds, madeCut, withdrawn };
+      });
+
+      // STEP 2: Find worst score among ACTIVE players only
+      let worstScore = 0;
+      Object.values(golferMap).forEach(g => {
+        if (g.madeCut && !g.withdrawn && g.totalToPar !== null) {
+          if (g.totalToPar > worstScore) worstScore = g.totalToPar;
+        }
+      });
+
+      // STEP 3: Override missed cut / withdrawn players
+      Object.values(golferMap).forEach(g => {
+        if (!g.madeCut || g.withdrawn) {
+          g.totalToPar = worstScore + 1;
+        }
       });
 
       cachedGolfers = golferMap;
@@ -229,7 +228,6 @@ if (completedRounds.length > 0) {
       if (aNull) return 1;
       if (bNull) return -1;
       if (a.total !== b.total) return a.total - b.total;
-      // Tiebreaker: closest to actual winning score (set in CONFIG)
       if (CONFIG.actualWinningScore) {
         const aDiff = Math.abs(a.tiebreaker - CONFIG.actualWinningScore);
         const bDiff = Math.abs(b.tiebreaker - CONFIG.actualWinningScore);
