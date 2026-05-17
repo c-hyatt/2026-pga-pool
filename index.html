@@ -102,8 +102,14 @@
       competitors.forEach(c => {
         const name = c.athlete?.displayName ?? "";
         const statusDesc = c.status?.type?.description?.toLowerCase() ?? "";
-        const madeCut = !statusDesc.includes("cut");
         const withdrawn = statusDesc.includes("withdrawn");
+        const completedRoundCount = (c.linescores ?? []).filter(r =>
+          r.displayValue && r.displayValue !== "-" && r.displayValue !== "--"
+        ).length;
+        // If tournament is complete (4 rounds played in field) and player only has 2 rounds, they missed the cut
+        const maxRounds = 4;
+        const tournamentComplete = CONFIG.actualWinningScore !== null;
+        const madeCut = withdrawn ? false : !(tournamentComplete && completedRoundCount < 3);
 
         const completedRounds = (c.linescores ?? []).filter(r =>
           r.displayValue && r.displayValue !== "-" && r.displayValue !== "--"
