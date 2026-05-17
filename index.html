@@ -160,16 +160,16 @@
 
       return rows.map((row, i) => {
         const paid = (row["Paid"] ?? "").toUpperCase() === "TRUE";
-        const name = row["Your Name (first and last)"] ?? "Entry " + (i + 1);
+        const name = row["Your Name"] ?? "Entry " + (i + 1);
         const timestamp = row["Timestamp"] ?? "";
         const tiebreaker = parseInt(row["Tiebreaker: Winning Score"] ?? "0") || 0;
         const picks = [
-          row["The Favorites"] ?? "",
-          row["The Contenders"] ?? "",
-          row["The Dark Horses"] ?? "",
-          row["The Long Shots"] ?? "",
-          row["The Underdogs"] ?? "",
-          row["The Rest of the Field"] ?? "",
+          row["Tier 1 -- The Favorites"] ?? "",
+          row["Tier 2 -- The Contenders"] ?? "",
+          row["Tier 3 -- The Dark Horses"] ?? "",
+          row["Tier 4 -- The Long Shots"] ?? "",
+          row["Tier 5 -- The Underdogs"] ?? "",
+          row["Tier 6 -- The Field"] ?? "",
         ].map(normalizeName);
 
         return { name, paid, picks, timestamp, tiebreaker };
