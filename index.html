@@ -17,28 +17,28 @@
   </div>
 
   <!-- Par row -->
-<div class="par-row">
-  <div class="par-cell hole-label"><div>HOLE</div><div>PAR</div></div>
-  <div class="par-cell"><div>1</div><div>4</div></div>
-  <div class="par-cell"><div>2</div><div>4</div></div>
-  <div class="par-cell"><div>3</div><div>3</div></div>
-  <div class="par-cell"><div>4</div><div>4</div></div>
-  <div class="par-cell"><div>5</div><div>4</div></div>
-  <div class="par-cell"><div>6</div><div>3</div></div>
-  <div class="par-cell"><div>7</div><div>4</div></div>
-  <div class="par-cell"><div>8</div><div>5</div></div>
-  <div class="par-cell"><div>9</div><div>4</div></div>
-  <div class="par-cell"><div>10</div><div>4</div></div>
-  <div class="par-cell"><div>11</div><div>3</div></div>
-  <div class="par-cell"><div>12</div><div>4</div></div>
-  <div class="par-cell"><div>13</div><div>5</div></div>
-  <div class="par-cell"><div>14</div><div>4</div></div>
-  <div class="par-cell"><div>15</div><div>3</div></div>
-  <div class="par-cell"><div>16</div><div>4</div></div>
-  <div class="par-cell"><div>17</div><div>4</div></div>
-  <div class="par-cell"><div>18</div><div>4</div></div>
-  <div class="par-cell hole-label"><div>TOTAL</div><div>70</div></div>
-</div>
+  <div class="par-row">
+    <div class="par-cell hole-label"><div>HOLE</div><div>PAR</div></div>
+    <div class="par-cell"><div>1</div><div>4</div></div>
+    <div class="par-cell"><div>2</div><div>4</div></div>
+    <div class="par-cell"><div>3</div><div>3</div></div>
+    <div class="par-cell"><div>4</div><div>4</div></div>
+    <div class="par-cell"><div>5</div><div>4</div></div>
+    <div class="par-cell"><div>6</div><div>3</div></div>
+    <div class="par-cell"><div>7</div><div>4</div></div>
+    <div class="par-cell"><div>8</div><div>5</div></div>
+    <div class="par-cell"><div>9</div><div>4</div></div>
+    <div class="par-cell"><div>10</div><div>4</div></div>
+    <div class="par-cell"><div>11</div><div>3</div></div>
+    <div class="par-cell"><div>12</div><div>4</div></div>
+    <div class="par-cell"><div>13</div><div>5</div></div>
+    <div class="par-cell"><div>14</div><div>4</div></div>
+    <div class="par-cell"><div>15</div><div>3</div></div>
+    <div class="par-cell"><div>16</div><div>4</div></div>
+    <div class="par-cell"><div>17</div><div>4</div></div>
+    <div class="par-cell"><div>18</div><div>4</div></div>
+    <div class="par-cell hole-label"><div>TOTAL</div><div>70</div></div>
+  </div>
 
   <!-- Leaderboard -->
   <div class="leaderboard-wrap">
@@ -97,8 +97,8 @@
       const competitors = data?.events?.[0]?.competitions?.[0]?.competitors ?? [];
       if (!competitors.length) return cachedGolfers;
 
-      // STEP 1: Build the golfer map with real scores first
-      const golferMap = {};
+      // STEP 1: Build raw scores for all players
+      const rawMap = {};
       competitors.forEach(c => {
         const name = c.athlete?.displayName ?? "";
         const statusDesc = c.status?.type?.description?.toLowerCase() ?? "";
@@ -117,27 +117,27 @@
           }, 0);
         }
 
-        const rounds = (c.linescores ?? []).map(r => {
-          const v = r.displayValue;
-          return v === "E" ? 0 : (isNaN(parseInt(v)) ? null : parseInt(v));
-        });
-
-        golferMap[name] = { name, totalToPar, rounds, madeCut, withdrawn };
+        rawMap[name] = { name, totalToPar, madeCut, withdrawn };
       });
 
-      // STEP 2: Find worst score among ACTIVE players only
-      let worstScore = 0;
-      Object.values(golferMap).forEach(g => {
+      // STEP 2: Find worst score among players who MADE the cut and have a score
+      let worstScore = -999;
+      Object.values(rawMap).forEach(g => {
         if (g.madeCut && !g.withdrawn && g.totalToPar !== null) {
           if (g.totalToPar > worstScore) worstScore = g.totalToPar;
         }
       });
+      if (worstScore === -999) worstScore = 0;
 
-      // STEP 3: Override missed cut / withdrawn players
-      Object.values(golferMap).forEach(g => {
-        if (!g.madeCut || g.withdrawn) {
-          g.totalToPar = worstScore + 1;
-        }
+      // STEP 3: Build final golfer map, applying cut penalty after worstScore is known
+      const golferMap = {};
+      Object.values(rawMap).forEach(g => {
+        golferMap[g.name] = {
+          name: g.name,
+          totalToPar: (!g.madeCut || g.withdrawn) ? worstScore + 1 : g.totalToPar,
+          madeCut: g.madeCut,
+          withdrawn: g.withdrawn,
+        };
       });
 
       cachedGolfers = golferMap;
@@ -160,16 +160,16 @@
 
       return rows.map((row, i) => {
         const paid = (row["Paid"] ?? "").toUpperCase() === "TRUE";
-        const name = row["Your Name"] ?? "Entry " + (i + 1);
+        const name = row["Your Name (first and last)"] ?? "Entry " + (i + 1);
         const timestamp = row["Timestamp"] ?? "";
         const tiebreaker = parseInt(row["Tiebreaker: Winning Score"] ?? "0") || 0;
         const picks = [
-          row["Tier 1 -- The Favorites"] ?? "",
-          row["Tier 2 -- The Contenders"] ?? "",
-          row["Tier 3 -- The Dark Horses"] ?? "",
-          row["Tier 4 -- The Long Shots"] ?? "",
-          row["Tier 5 -- The Underdogs"] ?? "",
-          row["Tier 6 -- The Field"] ?? "",
+          row["The Favorites"] ?? "",
+          row["The Contenders"] ?? "",
+          row["The Dark Horses"] ?? "",
+          row["The Long Shots"] ?? "",
+          row["The Underdogs"] ?? "",
+          row["The Rest of the Field"] ?? "",
         ].map(normalizeName);
 
         return { name, paid, picks, timestamp, tiebreaker };
